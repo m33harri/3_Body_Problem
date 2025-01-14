@@ -4,14 +4,16 @@ clear all % start with a clean workspace
 close all
 %% Simulation pars:
 % Delta times
-
-dt = 10.^-5;  % Plottime for simulation
-
-
-dtplot = 0.1;  % Plottime for plotting/saving data
-
+dt_max = 1/2*10.^-5;  % Min Delta t for the simulation
 % Maximum Plottime
-t_max = 100;
+t_max = 200;
+% Plottime for plotting/saving data
+dtplot = .1;  
+
+
+%simulation time
+t_now = 0;
+dt_now = dt_max;  % Plottime for simulation
 
 % Mass values for Planets
 m1 = 5; m2 = 5; m3 = 9;
@@ -30,6 +32,7 @@ Plottime = 0: dtplot : t_max;
 % Preallocate arrays for trajectory plotting
 xPositions = zeros(3,length(Plottime));  % data stored as [index, time]
 yPositions = xPositions;
+vals = Plottime;
 PlotConunter = 1;
 
 
@@ -45,7 +48,8 @@ Vo1=Vo(:,1);
 Vo2=Vo(:,2);
 Vo3=Vo(:,3);
 
-for i = 1:floor(t_max/dt) % max time
+
+while t_now < t_max
     
     % Calculate forces on the bodies using pairwise distances
     % Matrix of all radius data
@@ -68,19 +72,29 @@ for i = 1:floor(t_max/dt) % max time
     %for this comp but slower later when computing r.
     
     
-    P1 = P1 + Vo1/2 * dt + (F12   + F13) * (dt^2);
-    P2 = P2 + Vo2/2 * dt + (-F12  + F23) * (dt^2);
-    P3 = P3 + Vo3/2 * dt + (-F23  - F13) * (dt^2);
+    P1 = P1 + Vo1/2 * dt_now + (F12   + F13) * (dt_now^2);
+    P2 = P2 + Vo2/2 * dt_now + (-F12  + F23) * (dt_now^2);
+    P3 = P3 + Vo3/2 * dt_now + (-F23  - F13) * (dt_now^2);
     % Recalculating Velocity for each body (vectorized)
     
     % Vo = Vo + ForceTerms * dt;
     
-    Vo1 = Vo1 + (F12  + F13) * dt;
-    Vo2 = Vo2 + (-F12 + F23) * dt;
-    Vo3 = Vo3 + (-F23 - F13) * dt;
+    Vo1 = Vo1 + (F12  + F13) * dt_now;
+    Vo2 = Vo2 + (-F12 + F23) * dt_now;
+    Vo3 = Vo3 + (-F23 - F13) * dt_now;
+    
+    
+    t_now = t_now +  dt_now;
+     
+    dt_now= max(min(dt_max, (10^-2)*min(abs([r12./(abs(Vo1)+abs(Vo2));...
+      r13./(abs(Vo1)+abs(Vo3));...
+      r23./(abs(Vo2)+abs(Vo3))]))), 10^-7);
+    
+     
+    
     
     % Store the current positions for trajectory plotting
-    if dt*i>dtplot*PlotConunter  % force plot when sim time passes plot time
+    if t_now >= dtplot*PlotConunter  % force plot when sim time passes plot time
         xPositions (:,PlotConunter) = [P1(1);P2(1);P3(1)];
         yPositions (:,PlotConunter) = [P1(2);P2(2);P3(2)];
         PlotConunter = PlotConunter+1;
